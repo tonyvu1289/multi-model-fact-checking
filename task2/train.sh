@@ -1,5 +1,5 @@
 python task2/main.py \
-    --batch_size 512 \
+    --batch_size 2 \
     --epoch 30 \
     --val \
-    --path /home/s2320014/data/mocheg \
+    --path /kaggle/input/mocheg1/mocheg \

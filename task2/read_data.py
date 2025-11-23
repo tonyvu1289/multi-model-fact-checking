@@ -3,7 +3,7 @@ import cv2
 import glob
 from tqdm import tqdm, trange
 
-DATA_PATH = '/home/s2320014/data'
+DATA_PATH = '/kaggle/input/mocheg1/mocheg'
 
 
 def read_text_corpus(path):
@@ -115,13 +115,3 @@ if __name__ == '__main__':
     val_claim = retrieve_data_for_verification(dev_text, dev_image)
     train_claim = retrieve_data_for_verification(train_text, train_image)
     test_claim = retrieve_data_for_verification(test_text, test_image)
-
-
-
-
-
-
-
-
-
-
