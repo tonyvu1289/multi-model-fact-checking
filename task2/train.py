@@ -149,8 +149,10 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
         for i in trange(len(X)):
             optimizer.zero_grad()
             batch_x = X[i]
-            score, lb = model(batch_x, y[i])
-            loss = loss_function(score.to(device), lb.to(device))
+            # call model to get scores only; build label tensor separately so shapes are consistent across GPUs
+            score = model(batch_x)
+            lb = torch.stack(y[i]).to(device)
+            loss = loss_function(score.to(device), lb)
             loss.backward()
 
             optimizer.step()
@@ -244,8 +246,10 @@ def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="ro
         for i in trange(len(X)):
             optimizer.zero_grad()
             batch_x = X[i]
-            score, lb = model(batch_x, y[i])
-            loss = loss_function(score.to(device), lb.to(device))
+            # call model to get scores only; build label tensor separately so shapes are consistent across GPUs
+            score = model(batch_x)
+            lb = torch.stack(y[i]).to(device)
+            loss = loss_function(score.to(device), lb)
             loss.backward()
 
             optimizer.step()
@@ -303,8 +307,8 @@ def predict(test_data, model, batch_size, device=None):
         batch_x = X[i]
         batch_y = y[i]
         batch_z = z[i]
-
-        scores, lb = model(batch_x)
+        # model returns scores only; no label expected from forward
+        scores = model(batch_x)
         scores = scores.reshape(-1, 3)
 
         if not ids:
