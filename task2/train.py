@@ -116,13 +116,15 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
     model = MultiModalClassification(device, claim_pt, vision_pt, long_pt)
     # model = MultiModalClassificationNoAttention(device, claim_pt, vision_pt, long_pt)
     model = model.to(device)
-    # print(model)
-    loss_function = FocalLoss(gamma=2)
 
-    loss_function = loss_function.to(device)
-
-    # optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    # multi-gpu support: wrap model with DataParallel if multiple GPUs available
+    num_gpus = torch.cuda.device_count()
+    use_dataparallel = num_gpus > 1
+    if use_dataparallel:
+        model = nn.DataParallel(model)
+    # create optimizer after wrapping so it references correct parameters
     optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    loss_function = FocalLoss(gamma=2).to(device)
     loss_vals = []
 
     print('Training.......')
@@ -162,34 +164,53 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
             mif1 = f1_score(truelb, predlb, average='micro')
             if mif1 > best_acc:
                 best_acc = copy.deepcopy(mif1)
-                best_model = copy.deepcopy(model)
+                # keep best_model as the underlying module (unwrapped) for portability
+                best_model = copy.deepcopy(model.module if isinstance(model, nn.DataParallel) else model)
             print("Macro F1-score: {}\n".format(f1_score(truelb, predlb, average='macro')))
             print("F1-score: {}\n".format(f1_score(truelb, predlb, average='micro')))
         else:
-            best_model = copy.deepcopy(model)
+            best_model = copy.deepcopy(model.module if isinstance(model, nn.DataParallel) else model)
         print('===========\n')
 
+        # Save checkpoint with state_dict of the underlying module so keys are consistent
+        model_state = model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()
         torch.save({
             'total_epochs': epoch,
             'current_epoch': e,
             'batch_size': batch_size,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': model_state,
             'optimizer_state_dict': optimizer.state_dict()
         }, "{}/checkpoint/checkpoint_{}.pt".format(
             str(chk_dir),
             str(e))
         )
 
-    torch.save(best_model, '{}/best_model.pt'.format(chk_dir))
+    # Save best model's state_dict (unwrapped)
+    best_state = best_model.state_dict() if not isinstance(best_model, nn.DataParallel) else best_model.module.state_dict()
+    torch.save({'model_state_dict': best_state}, '{}/best_model.pt'.format(chk_dir))
 
     return best_model, loss_vals, claim_pt
 
 
 def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="roberta-base",
                  vision_pt='vit', long_pt="longformer", device=None):
+    # create base model, load checkpoint (handle potential 'module.' prefix), then wrap for multi-gpu
+    def _strip_module_prefix(state_dict):
+        # If the keys contain 'module.' prefix (from DataParallel), strip it
+        if any(k.startswith('module.') for k in state_dict.keys()):
+            return {k.replace('module.', ''): v for k, v in state_dict.items()}
+        return state_dict
+
     model = MultiModalClassification(device, claim_pt, vision_pt, long_pt)
-    model.load_state_dict(chkpoint['model_state_dict'])
+    state = chkpoint['model_state_dict']
+    state = _strip_module_prefix(state)
+    model.load_state_dict(state)
     model = model.to(device)
+
+    # wrap for multi-gpu if available
+    num_gpus = torch.cuda.device_count()
+    if num_gpus > 1:
+        model = nn.DataParallel(model)
     print(model)
     loss_function = FocalLoss(gamma=2)
     loss_function = loss_function.to(device)
@@ -245,11 +266,12 @@ def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="ro
             best_model = copy.deepcopy(model)
         print('===========\n')
 
+        model_state = model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()
         torch.save({
             'total_epochs': epoch,
             'current_epoch': e,
             'batch_size': batch_size,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': model_state,
             'optimizer_state_dict': optimizer.state_dict()
         }, "{}/checkpoint/checkpoint_{}.pt".format(
             str(chk_dir),
@@ -263,7 +285,10 @@ def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="ro
 
 def predict(test_data, model, batch_size, device=None):
     # model = nn.DataParallel(model)
+    # move to device and wrap for multi-gpu if not already wrapped
     model = model.to(device)
+    if torch.cuda.device_count() > 1 and not isinstance(model, nn.DataParallel):
+        model = nn.DataParallel(model)
 
     ground_truth = []
     predicts = []
