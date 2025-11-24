@@ -149,10 +149,12 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
         for i in trange(len(X)):
             optimizer.zero_grad()
             batch_x = X[i]
-            # call model to get scores only; build label tensor separately so shapes are consistent across GPUs
-            score = model(batch_x)
+            # call model and accept either tensor or (tensor, ...) outputs
+            out = model(batch_x)
+            score = out[0] if isinstance(out, (tuple, list)) else out
             lb = torch.stack(y[i]).to(device)
-            loss = loss_function(score.to(device), lb)
+            score = score.to(device)
+            loss = loss_function(score, lb)
             loss.backward()
 
             optimizer.step()
@@ -246,10 +248,12 @@ def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="ro
         for i in trange(len(X)):
             optimizer.zero_grad()
             batch_x = X[i]
-            # call model to get scores only; build label tensor separately so shapes are consistent across GPUs
-            score = model(batch_x)
+            # call model and accept either tensor or (tensor, ...) outputs
+            out = model(batch_x)
+            score = out[0] if isinstance(out, (tuple, list)) else out
             lb = torch.stack(y[i]).to(device)
-            loss = loss_function(score.to(device), lb)
+            score = score.to(device)
+            loss = loss_function(score, lb)
             loss.backward()
 
             optimizer.step()
@@ -307,8 +311,9 @@ def predict(test_data, model, batch_size, device=None):
         batch_x = X[i]
         batch_y = y[i]
         batch_z = z[i]
-        # model returns scores only; no label expected from forward
-        scores = model(batch_x)
+        # model may return tensor or (tensor, ...); take first element as scores
+        out = model(batch_x)
+        scores = out[0] if isinstance(out, (tuple, list)) else out
         scores = scores.reshape(-1, 3)
 
         if not ids:
