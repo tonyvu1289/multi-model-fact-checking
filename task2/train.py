@@ -122,7 +122,7 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
     loss_function = loss_function.to(device)
 
     # optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.001)
     loss_vals = []
 
     print('Training.......')
