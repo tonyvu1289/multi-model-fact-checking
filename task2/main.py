@@ -6,7 +6,8 @@ import datetime
 from sklearn.metrics import f1_score
 
 from read_data import get_dataset
-from train import ClaimVerificationDataset, train_model, predict
+from train import ClaimVerificationDataset, train_model, predict, train_resume
+import helper
 
 
 def parser_args():
@@ -21,6 +22,7 @@ def parser_args():
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--model_path', type=str, default="")
     parser.add_argument('--n_gpu', type=int, default=None)
+    parser.add_argument('--checkpoint_path', type=str, default=None)
     args = parser.parse_args()
     return args
 
@@ -40,9 +42,23 @@ if __name__ == '__main__':
     if args.test:
         model = torch.load(args.model_path, map_location=device)
     else:
-        model, loss, name_pt = train_model(train_claim, batch_size=args.batch_size,
-                                     epoch=args.epoch, is_val=args.val, val_data=dev_claim, device=device,
-                                     claim_pt=args.claim_pt, vision_pt=args.vision_pt, long_pt=args.long_pt)
+        if args.checkpoint_path is not None:
+            print("Resuming training from checkpoint: {}".format(args.checkpoint_path))
+            claim_pt, vision_pt, long_pt, chkpoint = helper.process_checkpoint_path(args.checkpoint_path)
+            model, loss, name_pt = train_resume(
+                train_claim,
+                chkpoint,
+                is_val=args.val,
+                val_data=dev_claim,
+                device=device,
+                claim_pt=claim_pt,
+                vision_pt=vision_pt,
+                long_pt=long_pt,
+            )
+        else:
+            model, loss, name_pt = train_model(train_claim, batch_size=args.batch_size,
+                                         epoch=args.epoch, is_val=args.val, val_data=dev_claim, device=device,
+                                         claim_pt=args.claim_pt, vision_pt=args.vision_pt, long_pt=args.long_pt)
 
         # torch.save(model, 'claim_verification_{}.pt'.format(
         #     str(datetime.datetime.now().strftime("%d-%m_%H-%M"))))
