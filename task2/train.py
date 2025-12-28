@@ -113,6 +113,7 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
     #     device = torch.device('cuda:{}'.format(n_gpu) if torch.cuda.is_available() else 'cpu')
     # else:
     #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # model = MCVE_QFormer(device, claim_pt, vision_pt, long_pt)
     model = MultiModalClassification(device, claim_pt, vision_pt, long_pt)
     # model = MultiModalClassificationNoAttention(device, claim_pt, vision_pt, long_pt)
     model = model.to(device)
