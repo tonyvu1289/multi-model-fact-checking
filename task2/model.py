@@ -305,12 +305,12 @@ class MultiModalClassificationWithOCR(nn.Module):
             Hc.append(claim_f)
             Ht.append(text_feature)
             Hm.append(image_feature)
-            Ho.append(ocr_feature)
+            Ho.append(ocr_feature.detach())
 
         Hc = torch.cat(Hc)
         Ht = torch.cat(Ht)
         Hm = torch.cat(Hm)
-        Ho = torch.cat(Ho)
+        Ho = torch.cat(Ho).requires_grad_(True)
 
         if Lb:
             Lb = torch.stack(Lb)
