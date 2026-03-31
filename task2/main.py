@@ -17,12 +17,18 @@ def parser_args():
     parser.add_argument('--val', default=True, action='store_true')
     parser.add_argument('--path', type=str, default="/home/s2320014/data")
     parser.add_argument('--claim_pt', type=str, default="roberta-base")
-    parser.add_argument('--vision_pt', type=str, default="vit")
+    parser.add_argument(
+        '--vision_pt',
+        type=str,
+        default="ocr_easyocr",
+        choices=["ocr_easyocr", "ocr_paddleocr", "easyocr", "paddleocr", "ocr", "ocr_mobilenet_paddle"],
+    )
     parser.add_argument('--long_pt', type=str, default="longformer")
     parser.add_argument('--test', default=False, action='store_true')
     parser.add_argument('--model_path', type=str, default="")
     parser.add_argument('--n_gpu', type=int, default=None)
     parser.add_argument('--checkpoint_path', type=str, default=None)
+    parser.add_argument('--sample_limit', type=int, default=None)
     args = parser.parse_args()
     return args
 
@@ -30,6 +36,13 @@ def parser_args():
 if __name__ == '__main__':
     args = parser_args()
     train, val, test = get_dataset(args.path)
+
+    if args.sample_limit is not None:
+        sample_limit = max(1, int(args.sample_limit))
+        train = train[:sample_limit]
+        val = val[:sample_limit]
+        test = test[:sample_limit]
+
     train_claim = ClaimVerificationDataset(train)
     dev_claim = ClaimVerificationDataset(val)
     test_claim = ClaimVerificationDataset(test)

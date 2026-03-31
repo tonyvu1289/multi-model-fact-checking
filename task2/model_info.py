@@ -29,7 +29,12 @@ def count_parameters(model):
 def parser_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--claim_pt', type=str, default="roberta-base")
-    parser.add_argument('--vision_pt', type=str, default="vit")
+    parser.add_argument(
+        '--vision_pt',
+        type=str,
+        default="ocr_easyocr",
+        choices=["ocr_easyocr", "ocr_paddleocr", "easyocr", "paddleocr", "ocr", "ocr_mobilenet_paddle"],
+    )
     parser.add_argument('--long_pt', type=str, default="longformer")
     parser.add_argument('--n_gpu', type=int, default=None)
     args = parser.parse_args()

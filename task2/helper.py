@@ -1,7 +1,9 @@
-import torch 
+import torch
 import os
+
+
 def process_checkpoint_path(path):
-    # path have form of model_verification_{claim_pt}_{vision_pt}_{long_pt}_checkpoint.pt
+    # path format: model_verification_{claim_pt}_{long_pt}_{vision_pt}_{timestamp}
     base_name = os.path.basename(path)
     parts = base_name.split('_')
     claim_pt = parts[2]
@@ -20,7 +22,7 @@ def process_checkpoint_path(path):
     return claim_pt, vision_pt, long_pt, chkpoint
     
 if __name__ == '__main__':
-    path = '/home/duy/project/thesis_master/multimodal-fact-checking/model_dump/model_verification_roberta-base_longformer_vit_26-11_05-43'
+    path = '/home/duy/project/thesis_master/multimodal-fact-checking/model_dump/model_verification_roberta-base_longformer_ocr_easyocr_30-03_12-00'
     claim_pt, vision_pt, long_pt, chkpoint = process_checkpoint_path(path)
     print(claim_pt, vision_pt, long_pt)
     print(chkpoint.keys())
