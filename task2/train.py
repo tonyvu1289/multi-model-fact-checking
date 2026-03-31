@@ -107,13 +107,14 @@ class FocalLoss(nn.Module):
         return loss
 
 
-def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, claim_pt="roberta-base", vision_pt='vit',
-                long_pt="longformer", device=None):
+def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, claim_pt="roberta-base",
+                vision_pt='ocr_easyocr',
+                long_pt="longformer", device=None, ocr_cache_path=None):
     # if n_gpu:
     #     device = torch.device('cuda:{}'.format(n_gpu) if torch.cuda.is_available() else 'cpu')
     # else:
     #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = MultiModalClassification(device, claim_pt, vision_pt, long_pt)
+    model = MultiModalClassification(device, claim_pt, vision_pt, long_pt, ocr_cache_path=ocr_cache_path)
     # model = MultiModalClassificationNoAttention(device, claim_pt, vision_pt, long_pt)
     model = model.to(device)
     # print(model)
@@ -186,8 +187,8 @@ def train_model(train_data, batch_size, epoch=1, is_val=False, val_data=None, cl
 
 
 def train_resume(train_data, chkpoint, is_val=False, val_data=None, claim_pt="roberta-base",
-                 vision_pt='vit', long_pt="longformer", device=None):
-    model = MultiModalClassification(device, claim_pt, vision_pt, long_pt)
+                 vision_pt='ocr_easyocr', long_pt="longformer", device=None, ocr_cache_path=None):
+    model = MultiModalClassification(device, claim_pt, vision_pt, long_pt, ocr_cache_path=ocr_cache_path)
     model.load_state_dict(chkpoint['model_state_dict'])
     model = model.to(device)
     print(model)

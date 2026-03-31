@@ -29,6 +29,7 @@ def parser_args():
     parser.add_argument('--n_gpu', type=int, default=None)
     parser.add_argument('--checkpoint_path', type=str, default=None)
     parser.add_argument('--sample_limit', type=int, default=None)
+    parser.add_argument('--ocr_cache_path', type=str, default=None)
     args = parser.parse_args()
     return args
 
@@ -67,11 +68,13 @@ if __name__ == '__main__':
                 claim_pt=claim_pt,
                 vision_pt=vision_pt,
                 long_pt=long_pt,
+                ocr_cache_path=args.ocr_cache_path,
             )
         else:
             model, loss, name_pt = train_model(train_claim, batch_size=args.batch_size,
                                          epoch=args.epoch, is_val=args.val, val_data=dev_claim, device=device,
-                                         claim_pt=args.claim_pt, vision_pt=args.vision_pt, long_pt=args.long_pt)
+                                         claim_pt=args.claim_pt, vision_pt=args.vision_pt, long_pt=args.long_pt,
+                                         ocr_cache_path=args.ocr_cache_path)
 
         # torch.save(model, 'claim_verification_{}.pt'.format(
         #     str(datetime.datetime.now().strftime("%d-%m_%H-%M"))))

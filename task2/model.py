@@ -7,6 +7,7 @@ from transformers import AutoTokenizer, AutoModel
 from transformers import LongformerTokenizer, LongformerModel
 import torch.nn.functional as F
 import os
+import json
 import warnings
 from PIL import Image
 
@@ -124,9 +125,16 @@ class MultiModalClassification(nn.Module):
         image_texts = []
         for item in image_evidence:
             cache_key = item if isinstance(item, str) else None
+            resolved_keys = []
 
-            if cache_key is not None and cache_key in self._ocr_cache:
-                text = self._ocr_cache[cache_key]
+            if cache_key is not None:
+                resolved_keys.append(cache_key)
+                resolved_keys.append(os.path.normpath(cache_key))
+                resolved_keys = list(dict.fromkeys(resolved_keys))
+
+            if cache_key is not None and any(k in self._ocr_cache for k in resolved_keys):
+                found_key = next(k for k in resolved_keys if k in self._ocr_cache)
+                text = self._ocr_cache[found_key]
             else:
                 try:
                     if isinstance(item, str):
@@ -142,14 +150,16 @@ class MultiModalClassification(nn.Module):
                     text = ''
 
                 if cache_key is not None:
-                    self._ocr_cache[cache_key] = text
+                    for key in resolved_keys:
+                        self._ocr_cache[key] = text
 
             if str(text).strip():
                 image_texts.append(str(text).strip())
 
         return image_texts
 
-    def __init__(self, device, claim_pt="roberta-base", vision_pt='ocr_easyocr', long_pt="longformer"):
+    def __init__(self, device, claim_pt="roberta-base", vision_pt='ocr_easyocr', long_pt="longformer",
+                 ocr_cache_path=None):
         super(MultiModalClassification, self).__init__()
         print("MCVE model")
         self._claim_pt = claim_pt
@@ -161,7 +171,18 @@ class MultiModalClassification(nn.Module):
         self._long_text_processor, self._long_text_model = self.text_model_long(self._long_pt)
         self._ocr_encoder = OCRTextEncoder(self._vision_pt, use_gpu=torch.cuda.is_available())
         self._ocr_cache = {}
+        self._ocr_cache_path = ocr_cache_path
         self._device = device
+
+        if self._ocr_cache_path and os.path.exists(self._ocr_cache_path):
+            try:
+                with open(self._ocr_cache_path, 'r', encoding='utf-8') as f:
+                    loaded_cache = json.load(f)
+                # Cache format: {"/abs/path/image.jpg": "recognized text"}
+                self._ocr_cache.update({str(k): str(v) for k, v in loaded_cache.items()})
+                print("Loaded OCR cache entries: {}".format(len(self._ocr_cache)))
+            except Exception as exc:
+                print("Failed to load OCR cache '{}': {}".format(self._ocr_cache_path, exc))
 
         self.conv = nn.Conv1d(768, 100, stride=1, kernel_size=3, padding=1)
         self.conv2 = nn.Conv1d(768, 100, stride=1, kernel_size=5, padding=2)
