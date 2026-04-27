@@ -1,4 +1,3 @@
-sour#!/usr/bin/env bash
 set -Eeuo pipefail
 
 # -------- Config --------
@@ -14,7 +13,7 @@ DATA_OUTPUT_NAME=""
 FORCE_DOWNLOAD="0"
 EXTRACT_DATA_ARCHIVE="1"
 DATA_EXTRACT_DIR="$DATA_OUTPUT_DIR"
-
+INPUT_KAGGLE_DATASET_DIR="/kaggle/input/datasets/congduyvu"
 WORKING_BRANCH="train_resume"
 # Paste your private key content here if needed. Leave empty to auto-generate a key pair.
 GITHUB_SSH_PRIVATE_KEY=""
@@ -292,7 +291,8 @@ clone_repo() {
 		log "Project directory $PROJECT_DIR_NAME already exists. Removing it for a fresh clone."
 		rm -rf "$PROJECT_DIR_NAME"
 	fi	
-	git clone https://github.com/tonyvu1289/multi-model-fact-checking.git
+	git clone git@github.com:tonyvu1289/multi-model-fact-checking.git
+	cd "$PROJECT_DIR_NAME"
 	git checkout "$WORKING_BRANCH"
 }
 
@@ -325,22 +325,33 @@ setup_python_env() {
 	fi
 }
 
+set_github_ssh() {
+	if [[ -d "$INPUT_KAGGLE_DATASET_DIR/github-ssh" ]]; then
+		mkdir -p "$HOME/.ssh"
+		cp -r "$INPUT_KAGGLE_DATASET_DIR/github-ssh/.ssh" "$HOME/.ssh/"	
+		chmod 600 "$HOME/.ssh/"
+		log "GitHub SSH keys copied from $INPUT_KAGGLE_DATASET_DIR/github-ssh to $HOME/.ssh/"
+	else 
+		log "No GitHub SSH keys found in $INPUT_KAGGLE_DATASET_DIR/github-ssh. Setting up SSH keys."
+	fi
+}
 # -------- Main --------
 main() {
-	install_base_packages
+	set_github_ssh
 	clone_repo
+	install_base_packages
 	setup_python_env
 	# download_training_data_from_url
 	# extract_training_data_archive "$DOWNLOADED_DATA_PATH"
 
 	log "Done."
 	log "Project directory: $PROJECT_PARENT_DIR/$PROJECT_DIR_NAME"
-	if [[ -n "$DOWNLOADED_DATA_PATH" ]]; then
-		log "Downloaded data file: $DOWNLOADED_DATA_PATH"
-	fi
-	if [[ "$EXTRACT_DATA_ARCHIVE" == "1" ]]; then
-		log "Extracted data directory: $DATA_EXTRACT_DIR"
-	fi
+#	if [[ -n "$DOWNLOADED_DATA_PATH" ]]; then
+#		log "Downloaded data file: $DOWNLOADED_DATA_PATH"
+#	fi
+#	if [[ "$EXTRACT_DATA_ARCHIVE" == "1" ]]; then
+#		log "Extracted data directory: $DATA_EXTRACT_DIR"
+#	fi
 	log "Activate env with: source $PROJECT_PARENT_DIR/$PROJECT_DIR_NAME/$VENV_DIR_NAME/bin/activate"
 }
 
