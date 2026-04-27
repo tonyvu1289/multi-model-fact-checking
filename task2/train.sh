@@ -3,3 +3,4 @@ python task2/main.py \
     --epoch 30 \
     --val \
     --path /kaggle/input/mocheg1/mocheg \
+# test
