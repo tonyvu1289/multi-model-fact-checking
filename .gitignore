@@ -1,0 +1,13 @@
+.venv/
+.pytest_cache/
+.vscode/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# local outputs
+model_dump/
+predict_dev.csv
+predict_test.csv
+deploy.sh
+ezcloud.sh
