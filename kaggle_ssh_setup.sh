@@ -7,6 +7,7 @@ PROJECT_DIR_NAME="multi-model-fact-checking"
 VENV_DIR_NAME=".venv"
 INPUT_KAGGLE_DATASET_DIR="/kaggle/input/datasets/congduyvu"
 WORKING_BRANCH="train_resume"
+INSTALL_PY_DEPS="1"
 # Paste your private key content here if needed. Leave empty to auto-generate a key pair.
 
 # -------- Logging --------
@@ -54,9 +55,10 @@ clone_repo() {
 
 set_github_ssh() {
 	if [[ -d "$INPUT_KAGGLE_DATASET_DIR/github-ssh" ]]; then
-		mkdir -p "$HOME/.ssh"
-		cp -r "$INPUT_KAGGLE_DATASET_DIR/github-ssh/.ssh" "$HOME/.ssh/"	
-		chmod 600 "$HOME/.ssh/"
+		# mkdir -p "$HOME/.ssh"
+		cp -r "$INPUT_KAGGLE_DATASET_DIR/github-ssh/.ssh" "$HOME"	
+		chmod 700 "$HOME/.ssh"
+		chmod 600 "$HOME/.ssh"/*
 		log "GitHub SSH keys copied from $INPUT_KAGGLE_DATASET_DIR/github-ssh to $HOME/.ssh/"
 	else 
 		log "No GitHub SSH keys found in $INPUT_KAGGLE_DATASET_DIR/github-ssh. Setting up SSH keys."
@@ -89,6 +91,7 @@ setup_python_env() {
 		log "Installing misc/factify/requirements.txt"
 		pip install -r misc/factify/requirements.txt
 	fi
+}
 # -------- Main --------
 main() {
 	set_github_ssh
