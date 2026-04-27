@@ -70,8 +70,7 @@ class MultiModalClassification(nn.Module):
 
         # ablation test
         # self._fc_evidence_a = nn.Linear(768 * 2, 3)
-
-    def forward(self, claim_features, label=None):
+    def compute_Hc_Ht_Hm(self, claim_features):
         device = self._device
         self._vision_model.to(device)
         self._text_model.to(device)
@@ -80,12 +79,6 @@ class MultiModalClassification(nn.Module):
         Hc = []
         Ht = []
         Hm = []
-        Lb = []
-
-        if label is not None:
-            label = label
-            for l in label:
-                Lb.append(l)
 
         for claim_feature in claim_features:
             claim = claim_feature['claim']
@@ -126,7 +119,54 @@ class MultiModalClassification(nn.Module):
         Hc = torch.cat(Hc)
         Ht = torch.cat(Ht)
         Hm = torch.cat(Hm)
+        return Hc, Ht, Hm
+    def load_precomputed_features(self, claim_features):
+        device = self._device
+        Hc = []
+        Ht = []
+        Hm = []
 
+        for claim_feature in claim_features:
+            ce = claim_feature['claim_embedding']
+            if isinstance(ce, torch.Tensor):
+                claim_f = ce.to(device)
+                if claim_f.dim() == 1:
+                    claim_f = claim_f.unsqueeze(0)
+            else:
+                claim_f = torch.tensor(ce).to(device).unsqueeze(0)
+
+            te_list = claim_feature.get('text_evidence_embeddings', [])
+            if te_list:
+                te_tensors = [t.to(device) if isinstance(t, torch.Tensor) else torch.tensor(t).to(device) for t in te_list]
+                text_feature = torch.stack(te_tensors).mean(dim=0, keepdim=True)
+            else:
+                text_feature = torch.zeros_like(claim_f)
+
+            ie_list = claim_feature.get('image_evidence_embeddings', [])
+            if ie_list:
+                ie_tensors = [t.to(device) if isinstance(t, torch.Tensor) else torch.tensor(t).to(device) for t in ie_list]
+                image_feature = torch.stack(ie_tensors).mean(dim=0, keepdim=True)
+            else:
+                image_feature = torch.zeros_like(claim_f)
+
+            Hc.append(claim_f)
+            Ht.append(text_feature)
+            Hm.append(image_feature)
+
+        Hc = torch.cat(Hc)
+        Ht = torch.cat(Ht)
+        Hm = torch.cat(Hm)
+        return Hc, Ht, Hm
+    def forward(self, claim_features, label=None):
+        device = self._device
+
+        Lb = []
+
+        if label is not None:
+            label = label
+            for l in label:
+                Lb.append(l)
+        Hc, Ht, Hm = self.compute_Hc_Ht_Hm(claim_features)
         if Lb:
             Lb = torch.stack(Lb)
 

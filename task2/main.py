@@ -2,7 +2,7 @@ import argparse
 import pandas as pd
 import torch
 import datetime
-
+import random
 from sklearn.metrics import f1_score
 
 from read_data import get_dataset
@@ -23,6 +23,7 @@ def parser_args():
     parser.add_argument('--model_path', type=str, default="")
     parser.add_argument('--n_gpu', type=int, default=None)
     parser.add_argument('--checkpoint_path', type=str, default=None)
+    parser.add_argument('--sample', default=False,action='store_true')
     args = parser.parse_args()
     return args
 
@@ -30,6 +31,10 @@ def parser_args():
 if __name__ == '__main__':
     args = parser_args()
     train, val, test = get_dataset(args.path)
+    if args.sample:
+        train = random.sample(train, 100)
+        val = random.sample(val, 100)
+        test = random.sample(test, 100)
     train_claim = ClaimVerificationDataset(train)
     dev_claim = ClaimVerificationDataset(val)
     test_claim = ClaimVerificationDataset(test)
