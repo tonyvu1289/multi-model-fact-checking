@@ -11,3 +11,4 @@ predict_dev.csv
 predict_test.csv
 deploy.sh
 ezcloud.sh
+precomputed_features/

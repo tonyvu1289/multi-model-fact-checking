@@ -64,6 +64,10 @@ set_github_ssh() {
 		log "No GitHub SSH keys found in $INPUT_KAGGLE_DATASET_DIR/github-ssh. Setting up SSH keys."
 	fi
 }
+github_config() {
+	git config --global user.name "duy.vu"
+	git config --global user.email "tonyvu1289@gmail.com"
+}
 # -------- Python Environment --------
 setup_python_env() {
 	if [[ "$INSTALL_PY_DEPS" != "1" ]]; then
@@ -95,6 +99,7 @@ setup_python_env() {
 # -------- Main --------
 main() {
 	set_github_ssh
+	github_config
 	clone_repo
 	install_base_packages
 	setup_python_env
